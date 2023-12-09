@@ -1,0 +1,70 @@
+from ckks.ckks_decryptor import CKKSDecryptor
+from ckks.ckks_encoder import CKKSEncoder
+from ckks.ckks_encryptor import CKKSEncryptor
+from ckks.ckks_evaluator import CKKSEvaluator
+from ckks.ckks_key_generator import CKKSKeyGenerator
+from ckks.ckks_parameters import CKKSParameters
+
+
+import os
+import hashlib
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hmac
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+
+
+poly_degree = 8
+ciph_modulus = 1 << 600
+big_modulus = 1 << 1200
+scaling_factor = 1 << 30
+params = CKKSParameters(poly_degree=poly_degree,
+                            ciph_modulus=ciph_modulus,
+                            big_modulus=big_modulus,
+                            scaling_factor=scaling_factor)
+key_generator = CKKSKeyGenerator(params)
+public_key = key_generator.public_key
+secret_key = key_generator.secret_key
+relin_key = key_generator.relin_key
+secret_key = secret_key.__str__()
+
+
+# Example usage
+input_key = secret_key.encode('utf-8')
+salt = b'Some salt value'
+info = b'Additional info'
+output_length = 32
+
+import os
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+salt = os.urandom(16)
+info = b"hkdf-example"
+hkdf = HKDF(
+    algorithm=hashes.SHA256(),
+    length=11,
+    salt=salt,
+    info=input_key,
+)
+key = hkdf.derive(bin(1).replace("0b", ""))
+
+hkdf = HKDF(
+    algorithm=hashes.SHA256(),
+    length=11,
+    salt=salt,
+    info=input_key,
+)
+key = hkdf.derive(bin(2).replace("0b", ""))
+
+print(key)
+hkdf = HKDF(
+    algorithm=hashes.SHA256(),
+    length=11,
+    salt=salt,
+    info=input_key,
+)
+hkdf.verify(b"input key", key)

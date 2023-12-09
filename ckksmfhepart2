@@ -1,0 +1,111 @@
+class MainServer:
+  def __init__(self,data,username,userlist,writtendata):
+
+    self.data = data
+    self.username = username
+    self.userlist = userlist
+    self.writtendata = writtendata
+  def write_in_server(self):
+    if self.username in self.userlist:
+      self.writtendata[self.username] = self.data
+      return(self.writtendata)
+    else:
+      return('user not registered')
+  def register(self):
+    self.userlist.append(self.username)
+    return(self.userlist)
+  def readserverdata(self):
+    return self.writtendata[self.username]
+
+
+from ckks.ckks_decryptor import CKKSDecryptor
+from ckks.ckks_encoder import CKKSEncoder
+from ckks.ckks_encryptor import CKKSEncryptor
+from ckks.ckks_evaluator import CKKSEvaluator
+from ckks.ckks_key_generator import CKKSKeyGenerator
+from ckks.ckks_parameters import CKKSParameters
+
+def CKKS_reg():
+    poly_degree = 8
+    ciph_modulus = 1 << 600
+    big_modulus = 1 << 1200
+    scaling_factor = 1 << 30
+    params = CKKSParameters(poly_degree=poly_degree,
+                            ciph_modulus=ciph_modulus,
+                            big_modulus=big_modulus,
+                            scaling_factor=scaling_factor)
+    key_generator = CKKSKeyGenerator(params)
+    public_key = key_generator.public_key
+    secret_key = key_generator.secret_key
+    relin_key = key_generator.relin_key
+
+    return params,public_key,secret_key,relin_key
+
+def CKKS_encryption(mes_ar,params,pubkey,seckey,relinkey):
+    poly_degree = 8
+    ciph_modulus = 1 << 600
+    big_modulus = 1 << 1200
+    scaling_factor = 1 << 30
+    encoder = CKKSEncoder(params)
+    encryptor = CKKSEncryptor(params, pubkey, seckey)
+    decryptor = CKKSDecryptor(params, seckey)
+    evaluator = CKKSEvaluator(params)
+    plain1 = encoder.encode(mes_ar, scaling_factor)
+    ciph1 = encryptor.encrypt(plain1)
+    return ciph1,evaluator
+
+def CKKS_decryption(ciphtext,params,pubkey,seckey,relinkey):
+    poly_degree = 8
+    ciph_modulus = 1 << 600
+    big_modulus = 1 << 1200
+    scaling_factor = 1 << 30
+    encoder = CKKSEncoder(params)
+    encryptor = CKKSEncryptor(params, pubkey, seckey)
+    decryptor = CKKSDecryptor(params, seckey)
+    evaluator = CKKSEvaluator(params)
+    decrypted_text = decryptor.decrypt(ciphtext)
+    decoded_text = encoder.decode(decrypted_text)
+    return decoded_text
+
+
+scaling_factor = 1 << 30
+params1,public_key1,secret_key1,relin_key1 = CKKS_reg()
+
+import os
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+salt = os.urandom(16)
+info = b"hkdf-example"
+hkdf = HKDF(
+    algorithm=hashes.SHA256(),
+    length=11,
+    salt=salt,
+    info=info,
+)
+key = hkdf.derive(secret_key1)
+generator = CKKSKeyGenerator(params1)
+generator
+cipher1,eval1 = CKKS_encryption([0.1, 0.2, 0.3, 0.4],params1,public_key1,secret_key1,relin_key1)
+
+
+params2,public_key2,secret_key2,relin_key2 = CKKS_reg()
+
+import os
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+salt = os.urandom(16)
+info = b"hkdf-example"
+hkdf = HKDF(
+    algorithm=hashes.SHA256(),
+    length=11,
+    salt=salt,
+    info=info,
+)
+key = hkdf.derive(secret_key2)
+cipher2,eval2 = CKKS_encryption([0.2, 0.4, 0.6,0.8],params2,public_key2,secret_key2,relin_key2)
+
+cipher3 = eval1.add(cipher1,cipher2)
+print(CKKS_decryption(cipher3,params1,public_key1,secret_key1,relin_key1))
+cipher3 = eval2.add(cipher1,cipher2)
+print(CKKS_decryption(cipher3,params2,public_key2,secret_key2,relin_key2))
+
